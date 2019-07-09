@@ -13,7 +13,7 @@
 -export([not_empty/2, not_empty_list/2]).
 -export([eq/2, one_of/2]).
 -export([any_object/2]).
--export(['or'/3]).
+-export(['or'/3, 'and'/3]).
 -export([validator/3]).
 
 %%%===================================================================
@@ -78,6 +78,11 @@ any_object([], Value) ->
 'or'([], _Value, _Options) ->
     {error, format_error}.
 
+'and'([_Validator|_T] = Validators, Value, Options) ->
+    and_1(Validators, Value, Options);
+'and'([], _Value, _Options) ->
+    {error, format_error}.    
+
 validator([Function], Value, _Options) when is_function(Function, 1) ->
     Function(Value);
 validator([Function, Args], Value, _Options) when is_function(Function, 2), is_list(Args) ->
@@ -104,3 +109,13 @@ or_1([Validator|T], Value, Options, Errors) ->
     end;
 or_1([], _Value, _Options, Errors) ->
     {error, {all_not_match, Errors}}.
+
+and_1([Validator|T], Value, Options) ->
+    case yaliver:validate_1(Validator, Value, Options) of
+        {ok, Value1} ->
+            and_1(T, Value1, Options);
+        {error, Reason} ->
+            {error, Reason}
+    end;
+and_1([], Value, _Options) ->
+    {ok, Value}.

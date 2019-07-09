@@ -24,8 +24,10 @@
 validate(Schema, Object) ->
     validate(Schema, Object, #{}).
 
+validate(Schema, Object, Options) when is_map(Schema), is_map(Object) ->
+    validate({map, [Schema]}, Object, Options);
 validate(Schema, Object, Options) when is_map(Options) ->
-    validate_1(Schema, Object, Options#{root => true});
+    validate_1(Schema, Object, Options);
 validate(Schema, Object, Options) when is_list(Options) ->
     Options1 = proplists_to_map(Options),
     validate(Schema, Object, Options1).
@@ -41,11 +43,13 @@ validate_1({ValidatorName, Args}, Object, Options) when is_atom(ValidatorName) -
     end;
 validate_1(ValidatorName, Object, Options) when is_atom(ValidatorName) ->
     validate_1({ValidatorName, []}, Object, Options);
+validate_1(Validators, Object, Options) when is_list(Validators) ->
+    validate_1({'and', Validators}, Object, Options);
 validate_1(Validator, Object, #{root := true} = Options) when is_map(Object), is_map(Validator) ->
     validate_1({map, [Validator]}, Object, Options).
     
 meta() ->
-    yaliver_rules_meta:rules_meta([yaliver_base_rules, yaliver_string_rules, yaliver_collection_rules]).
+    yaliver_rules_meta:rules_meta([yaliver_base_rules, yaliver_string_rules, yaliver_collection_rules, yaliver_number_rules]).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

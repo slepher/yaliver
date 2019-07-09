@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(yaliver_string_rules).
 
+-include_lib("erlando/include/do.hrl").
+
 %% API
 -export([string/1]).
 -export([max_length/2, min_length/2, length_between/2]).
@@ -50,17 +52,27 @@ like(_Args, _Value) ->
 trim(Value) when is_binary(Value) ->
     string:trim(Value);
 trim(Value) ->
-    trim(string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           trim(String)
+       ]).
 
 to_lc(Value) when is_binary(Value) ->
     string:lowercase(Value);
 to_lc(Value) ->
-    to_lc(string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           to_lc(String)
+       ]).
 
 to_uc(Value) when is_binary(Value) ->
     string:uppercase(Value);
 to_uc(Value) ->
-    to_uc(string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           to_uc(String)
+       ]).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -77,7 +89,10 @@ max_length_1(MaxLength, Value) when is_binary(Value) ->
         true    -> {error, too_long}
     end;
 max_length_1(MaxLength, Value) ->
-    max_length_1(MaxLength, string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           max_length_1(MaxLength, String)
+       ]).
 
 min_length_1(MinLength, Value) when is_binary(Value) ->
     StrLength = length(unicode:characters_to_list(Value)),
@@ -86,7 +101,10 @@ min_length_1(MinLength, Value) when is_binary(Value) ->
         true    -> {error, too_long}
     end;
 min_length_1(MinLength, Value) ->
-    min_length(MinLength, string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           min_length_1(MinLength, String)
+       ]).
 
 length_between_1(MinLength, MaxLength, Value) when is_binary(Value) ->
     StrLength = length(unicode:characters_to_list(Value)),
@@ -96,7 +114,10 @@ length_between_1(MinLength, MaxLength, Value) when is_binary(Value) ->
         true                  -> {ok, Value}
     end;
 length_between_1(MinLength, MaxLength, Value) ->
-    length_between_1(MinLength, MaxLength, string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           length_between_1(MinLength, MaxLength, String)
+       ]).
 
 like_1(Pattern, PatternOpts, Value) when is_binary(Value) ->
     case re:compile(Pattern, PatternOpts) of
@@ -109,5 +130,8 @@ like_1(Pattern, PatternOpts, Value) when is_binary(Value) ->
             {error, invalid_pattern}
     end;
 like_1(Pattern, PatternOpts, Value) ->
-    like_1(Pattern, PatternOpts, string(Value)).
+    do([error_m ||
+           String <- string(Value),
+           like_1(Pattern, PatternOpts, String)
+       ]).
 

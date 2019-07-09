@@ -20,7 +20,7 @@ map([Args], Map, Options) when is_map(Map), is_map(Args) ->
     {Map1, Errors} = 
         maps:fold(
           fun(Key, Validator, {MapAcc, ErrorAcc}) ->
-                  Options1 = maps:remove(root, Options#{key => Key, parent => Map}),
+                  Options1 =  Options#{key => Key, parent => Map},
                   Value = maps:get(Key, Map, undefined),
                   case yaliver:validate_1(Validator, Value, Options1) of
                       {ok, Value1} ->
@@ -56,9 +56,10 @@ variable_object([Key, ObjectArgs], Map, Options) ->
     end.
 
 list_of([Args], List, Options) when is_list(List) ->
+    Options1 = maps:without([key, parent], Options),
     traversable:traverse(
       fun(A) ->
-              yaliver:validate_1(Args, A, Options)
+              yaliver:validate_1(Args, A, Options1)
       end, List);
 list_of(Args, List, Options) when is_list(List) ->
     list_of([Args], List, Options);
