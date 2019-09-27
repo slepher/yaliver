@@ -71,9 +71,6 @@ apply_rule_1(RuleModule, ValidatorName, 2, Args, Object, _Options) ->
 apply_rule_1(RuleModule, ValidatorName, 3, Args, Object, Options) ->
     RuleModule:ValidatorName(Args, Object, Options).
 
-
-
-
 proplists_to_map(Proplists) ->
     proplists_to_map(Proplists, #{}).
 

@@ -1,5 +1,5 @@
 {application, yaliver,
- [{description, "An OTP library"},
+ [{description, "Yet Another LIVR Validator"},
   {vsn, "0.0.1"},
   {registered, []},
   {applications,

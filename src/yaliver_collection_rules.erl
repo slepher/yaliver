@@ -16,20 +16,24 @@
 %%% API
 %%%===================================================================
 map([Args], Map, Options) when is_map(Map), is_map(Args) ->
-    RestMap = maps:without(maps:keys(Args), Map),
+    %% RestMap = maps:without(maps:keys(Args), Map),
     {Map1, Errors} = 
         maps:fold(
           fun(Key, Validator, {MapAcc, ErrorAcc}) ->
                   Options1 =  Options#{key => Key, parent => Map},
-                  Value = maps:get(Key, Map, undefined),
-                  case yaliver:validate_1(Validator, Value, Options1) of
-                      {ok, Value1} ->
-                          MapAcc1 = maps:put(Key, Value1, MapAcc),
-                          {MapAcc1, ErrorAcc};
-                      {error, Reason} ->
-                          {MapAcc, [{Key, Reason}|ErrorAcc]}
+                  case maps:find(Key, Map) of
+                      {ok, Value} ->
+                          case yaliver:validate_1(Validator, Value, Options1) of
+                              {ok, Value1} ->
+                                  MapAcc1 = maps:put(Key, Value1, MapAcc),
+                                  {MapAcc1, ErrorAcc};
+                              {error, Reason} ->
+                                  {MapAcc, [{Key, Reason}|ErrorAcc]}
+                          end;
+                      error ->
+                          {MapAcc, ErrorAcc}
                   end
-          end, {RestMap, []}, Args),
+          end, {#{}, []}, Args),
     case Errors of
         [] ->
             {ok, Map1};
@@ -47,7 +51,7 @@ variable_object([Key, ObjectArgs], Map, Options) ->
         {ok, Value} ->
             case maps:find(Value, ObjectArgs) of
                 {ok, MapArgs} ->
-                    map([MapArgs], Map, Options);
+                    map([MapArgs#{Key => required}], Map, Options);
                 error ->
                     {error, invalid_format}
             end;
