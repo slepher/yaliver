@@ -1,9 +1,3 @@
-yaliver
-=====
-
-An OTP library
-
-Build
------
-
-    $ rebar3 compile
+# yaliver
+Yet Another LIVR Validator  
+Not Released.
