@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 27 Sep 2019 by Chen Slepher <slepheric@gmail.com>
 %%%-------------------------------------------------------------------
--module(yaliver_collection_rules_SUITE).
+-module(yaliver_base_rules_SUITE).
 
 -compile(export_all).
 -compile(nowarn_export_all).
@@ -108,14 +108,14 @@ groups() ->
 %% @end
 %%--------------------------------------------------------------------
 all() -> 
-    [test_list_of, test_map, test_variable_object].
+    [test_and].
 
 %%--------------------------------------------------------------------
 %% @spec TestCase() -> Info
 %% Info = [tuple()]
 %% @end
 %%--------------------------------------------------------------------
-test_variable_object() -> 
+test_and() -> 
     [].
 
 %%--------------------------------------------------------------------
@@ -127,27 +127,10 @@ test_variable_object() ->
 %% Comment = term()
 %% @end
 %%--------------------------------------------------------------------
-test_list_of(_Config) ->
-    Rule = {list_of, [#{a => integer}]},
-    {ok, X} = yaliver:validate(Rule, [#{a => 10, b => 20}]),
-    ?assertEqual([#{a => 10}], X),
-    ok.
-
-test_map(_Config) ->
-    Rule = #{a => integer},
-    {ok, X} = yaliver:validate(Rule,#{a => 10}),
-    {ok, Y} = yaliver:validate(Rule,#{b => 20}),
-    ?assertEqual(#{a => 10}, X),
-    ?assertEqual(#{}, Y),
-    ok.
-
-test_variable_object(_Config) -> 
-    Rule = {variable_object, 
-            [a,#{x => #{b => integer},
-                 y => #{c => integer}}
-            ]},
-    {ok, X} = yaliver:validate(Rule,#{a => x, b => 10, c => 20}),
-    {ok, Y} = yaliver:validate(Rule,#{a => y, c => 20, d => 20}),
-    ?assertEqual(#{a => x, b => 10}, X),
-    ?assertEqual(#{a => y, c => 20}, Y),
+test_or(_Config) -> 
+    Rule = {'or', [{list_of, [#{a => integer}]}, #{a => integer}]},
+    {ok, A} = yaliver:validate(Rule, #{a => 10}),
+    {ok, B} = yaliver:validate(Rule, [#{a => 10}]),
+    ?assertEqual(#{a => 10}, A),
+    ?assertEqual([#{a => 10}], B),
     ok.

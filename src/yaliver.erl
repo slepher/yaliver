@@ -24,14 +24,14 @@
 validate(Schema, Object) ->
     validate(Schema, Object, #{}).
 
-validate(Schema, Object, Options) when is_map(Schema), is_map(Object) ->
-    validate({map, [Schema]}, Object, Options);
 validate(Schema, Object, Options) when is_map(Options) ->
     validate_1(Schema, Object, Options);
 validate(Schema, Object, Options) when is_list(Options) ->
     Options1 = proplists_to_map(Options),
     validate(Schema, Object, Options1).
 
+validate_1(Schema, Object, Options) when is_map(Schema), is_map(Object) ->
+    validate({map, [Schema]}, Object, Options);
 validate_1({ValidatorName, Args}, Object, Options) when is_atom(ValidatorName) ->
     ExtraRules = maps:get(extra_rules, Options, #{}),
     Rules = maps:merge(meta(), ExtraRules),
