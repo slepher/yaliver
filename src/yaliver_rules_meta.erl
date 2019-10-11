@@ -29,7 +29,7 @@ rules_meta(Modules) ->
                             maps:put(Function, {Module, Arity}, Acc2)
                     end, Acc1, Exports)
           end, maps:new(), Modules1),
-    erl_syntax:abstract(MetaMap).
+    erl_syntax:revert(erl_syntax:abstract(MetaMap)).
     
 %%--------------------------------------------------------------------
 %% @doc

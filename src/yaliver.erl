@@ -15,7 +15,6 @@
 -export([validate_1/3]).
 -export([meta/0]).
 
-
 -use_macro({yaliver_rules_meta, rules_meta/1, #{}}).
 
 %%%===================================================================
@@ -45,6 +44,16 @@ validate_1(ValidatorName, Object, Options) when is_atom(ValidatorName) ->
     validate_1({ValidatorName, []}, Object, Options);
 validate_1(Validators, Object, Options) when is_list(Validators) ->
     validate_1({'and', Validators}, Object, Options);
+validate_1(Validator, Object, Options) when is_function(Validator) ->
+    {arity, Arity} = erlang:fun_info(Validator, arity),
+    case apply_validator(Validator, Arity, Object, Options) of
+        ok ->
+            {ok, Object};
+        {ok, V} ->
+            {ok, V};
+        {error, Reason} ->
+            {error, Reason}
+    end;
 validate_1(Validator, Object, #{root := true} = Options) when is_map(Object), is_map(Validator) ->
     validate_1({map, [Validator]}, Object, Options).
     
@@ -63,6 +72,13 @@ apply_rule(RuleModule, ValidatorName, Arity, Args, Object, _Options) when is_lis
     apply_rule_1(RuleModule, ValidatorName, Arity, Args, Object, _Options);
 apply_rule(RuleModule, ValidatorName, Arity, Args, Object, _Options) ->
     apply_rule(RuleModule, ValidatorName, Arity, [Args], Object, _Options).
+
+apply_validator(Validator, 1, Object, _Options) ->
+    Validator(Object);
+apply_validator(Validator, 2, Object, Options) ->
+    Validator(Object, Options);
+apply_validator(_Validator, _, _Object, _Options) ->
+    {error, invalid_validator}.
 
 apply_rule_1(RuleModule, ValidatorName, 1, _Args, Object, _Options) ->
     RuleModule:ValidatorName(Object);

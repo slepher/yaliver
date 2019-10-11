@@ -13,6 +13,7 @@
 %% API
 -export([integer/1]).
 -export([positive_integer/1, negative_integer/1]).
+-export([number_between/2]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -54,6 +55,16 @@ negative_integer(Value) ->
            Integer <- integer(Value),
            negative_integer(Integer)
        ]).
+
+number_between([_A, _B], Number) when not is_number(Number) ->
+    {error, not_number};
+number_between([A, _B], Number) when Number < A ->
+    {error, too_low};
+number_between([_A, B], Number) when Number > B ->
+    {error, too_high};
+number_between([_A, _B], Object) ->
+    {ok, Object}.
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
