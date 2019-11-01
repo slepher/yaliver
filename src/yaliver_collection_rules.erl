@@ -21,7 +21,7 @@ map([Args], Map, Options) when is_map(Map), is_map(Args) ->
         maps:fold(
           fun(Key, Validator, {MapAcc, ErrorAcc}) ->
                   Options1 =  Options#{key => Key, parent => Map},
-                  Value = maps:get(Key, Map, undefined),
+                  Value = map_get_value(Key, Map),
                   case yaliver:validate_1(Validator, Value, Options1) of
                       {ok, undefined} ->
                           {MapAcc, ErrorAcc};
@@ -86,4 +86,19 @@ list_of_different_objects(_Args, _List, _Options) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+map_get_value(Key, Map) when is_atom(Key) ->
+    Keys = [Key, atom_to_binary(Key, utf8)],
+    try_keys(Keys, Map);
+map_get_value(Key, Map) when is_binary(Key) ->
+    Keys = [Key, binary_to_atom(Key, utf8)],
+    try_keys(Keys, Map).
 
+try_keys([Key|T], Map) ->
+    case maps:find(Key, Map) of
+        {ok, Value} ->
+            Value;
+        error ->
+            try_keys(T, Map)
+    end;
+try_keys([], _Map) ->
+    undefined.

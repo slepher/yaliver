@@ -19,13 +19,15 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-required(_Args, Value, #{key := Key, parent := Parent}) ->
+required(_Args, undefined, #{key := Key, parent := Parent}) ->
     case maps:is_key(Key, Parent) of
         false ->
             {error, required};
         true ->
-            {ok, Value}
+            {ok, undefined}
     end;
+required(_Args, Value, #{}) ->
+    {ok, Value};
 required(_Args, undefined, _Options) ->
     {ok, required_not_in_map}.
 
