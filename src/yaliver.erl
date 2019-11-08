@@ -73,6 +73,8 @@ apply_rule(RuleModule, ValidatorName, Arity, Args, Object, _Options) when is_lis
 apply_rule(RuleModule, ValidatorName, Arity, Args, Object, _Options) ->
     apply_rule(RuleModule, ValidatorName, Arity, [Args], Object, _Options).
 
+apply_validator(_Validator, 1, undefined, _Options) ->
+    {ok, undefined};
 apply_validator(Validator, 1, Object, _Options) ->
     Validator(Object);
 apply_validator(Validator, 2, Object, Options) ->
@@ -80,8 +82,12 @@ apply_validator(Validator, 2, Object, Options) ->
 apply_validator(_Validator, _, _Object, _Options) ->
     {error, invalid_validator}.
 
+apply_rule_1(_RuleModule, _ValidatorName, 1, _Args, undefined, __Options) ->
+    {ok, undefined};
 apply_rule_1(RuleModule, ValidatorName, 1, _Args, Object, _Options) ->
     RuleModule:ValidatorName(Object);
+apply_rule_1(_RuleModule, _ValidatorName, 2, _Args, undefined, __Options) ->
+    {ok, undefined};
 apply_rule_1(RuleModule, ValidatorName, 2, Args, Object, _Options) ->
     RuleModule:ValidatorName(Args, Object);
 apply_rule_1(RuleModule, ValidatorName, 3, Args, Object, Options) ->
