@@ -20,8 +20,8 @@ map([Args], Map, Options) when is_map(Map), is_map(Args) ->
     {Map1, Errors} = 
         maps:fold(
           fun(Key, Validator, {MapAcc, ErrorAcc}) ->
-                  Options1 =  Options#{key => Key, parent => Map},
-                  Value = map_get_value(Key, Map),
+                  {Value, IsKey} = map_get_value(Key, Map),
+                  Options1 =  Options#{key => Key, parent => Map, is_key => IsKey},
                   case yaliver:validate_1(Validator, Value, Options1) of
                       {ok, undefined} ->
                           {MapAcc, ErrorAcc};
@@ -57,6 +57,8 @@ variable_object([Key, ObjectArgs], Map, Options) ->
             {error, invalid_format}
     end.
 
+list_of([_Args], [], _Options) ->
+    {ok, []};
 list_of([Args], List, Options) when is_list(List) ->
     Options1 = maps:without([key, parent], Options),
     traversable:traverse(
@@ -96,9 +98,9 @@ map_get_value(Key, Map) when is_binary(Key) ->
 try_keys([Key|T], Map) ->
     case maps:find(Key, Map) of
         {ok, Value} ->
-            Value;
+            {Value, true};
         error ->
             try_keys(T, Map)
     end;
 try_keys([], _Map) ->
-    undefined.
+    {undefined, false}.

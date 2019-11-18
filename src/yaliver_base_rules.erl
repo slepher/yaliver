@@ -19,8 +19,8 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-required(_Args, undefined, #{key := Key, parent := Parent}) ->
-    case maps:is_key(Key, Parent) of
+required(_Args, undefined, #{is_key := IsKey}) ->
+    case IsKey of
         false ->
             {error, required};
         true ->
@@ -31,15 +31,21 @@ required(_Args, Value, #{}) ->
 required(_Args, undefined, _Options) ->
     {ok, required_not_in_map}.
 
-default([Default], Value, #{key := Key, parent := Parent}) ->
-    case maps:is_key(Key, Parent) of
+default(Default, Value, #{is_key := IsKey}) ->
+    case IsKey of
         false ->
-            {ok, Default};
+            {ok, default_value(Default)};
         true ->
             {ok, Value}
     end;
+    
 default(_Args, undefined, _Options) ->
     {ok, default_not_in_map}.
+
+default_value([Default]) ->
+    Default;
+default_value(Default) ->
+    Default.
 
 not_empty(_Args, undefined) ->
     {error, cannot_be_empty};
