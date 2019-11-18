@@ -13,6 +13,7 @@
 %% API
 -export([integer/1]).
 -export([positive_integer/1, negative_integer/1]).
+-export([number/1]).
 -export([number_between/2]).
 %%%===================================================================
 %%% API
@@ -55,6 +56,19 @@ negative_integer(Value) ->
            Integer <- integer(Value),
            negative_integer(Integer)
        ]).
+
+number(Value) when is_number(Value) ->
+    ok;
+number(Value) when is_binary(Value) ->
+    try binary_to_float(Value) of
+        Float ->
+            {ok, Float}
+    catch
+        _:_Exception ->
+            {error, not_integer}
+    end;
+number(_) ->
+    {error, not_number}.
 
 number_between([_A, _B], Number) when not is_number(Number) ->
     {error, not_number};
