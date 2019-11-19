@@ -134,11 +134,11 @@ test_list_of(_Config) ->
     ok.
 
 test_map(_Config) ->
-    Rule = #{a => integer},
+    Rule = #{a => [required, integer]},
     {ok, X} = yaliver:validate(Rule,#{a => 10}),
-    {ok, Y} = yaliver:validate(Rule,#{b => 20}),
+    {error, Reason} = yaliver:validate(Rule,#{b => 20}),
     ?assertEqual(#{a => 10}, X),
-    ?assertEqual(#{}, Y),
+    ?assertEqual([{a, required}], Reason),
     ok.
 
 test_variable_object(_Config) -> 

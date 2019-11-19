@@ -9,38 +9,29 @@
 -module(yaliver_base_rules).
 
 %% API
--export([required/3, default/3]).
+-export([required/4, default/4]).
 -export([not_empty/2, not_empty_list/2]).
 -export([eq/2, one_of/2]).
 -export([any_object/2]).
--export(['or'/3, 'and'/3]).
--export([validator/3]).
+-export(['or'/3, 'and'/4]).
+-export([validator/3, validator/4]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-required(_Args, undefined, #{is_key := IsKey}) ->
-    case IsKey of
-        false ->
-            {error, required};
-        true ->
-            {ok, undefined}
-    end;
-required(_Args, Value, #{}) ->
+required(_Args, undefined, #{is_key := false}, _Opts) ->
+    {error, required};
+required(_Args, Value, #{is_key := true}, _Opts) ->
     {ok, Value};
-required(_Args, undefined, _Options) ->
-    {ok, required_not_in_map}.
+required(_Args, _, _MapOpts, _Opts) ->
+    {error, required_not_in_map}.
 
-default(Default, Value, #{is_key := IsKey}) ->
-    case IsKey of
-        false ->
-            {ok, default_value(Default)};
-        true ->
-            {ok, Value}
-    end;
-    
-default(_Args, undefined, _Options) ->
-    {ok, default_not_in_map}.
+default(Default, _Value, #{is_key := false}, _Opts) ->
+    {ok, default_value(Default)};
+default(_Default, Value, #{is_key := true}, _Opts) ->
+    {ok, Value};
+default(_Args, _Value, #{}, _Options) ->
+    {error, default_not_in_map}.
 
 default_value([Default]) ->
     Default;
@@ -86,18 +77,30 @@ any_object([], Value) ->
 'or'([], _Value, _Options) ->
     {error, format_error}.
 
-'and'([_Validator|_T] = Validators, Value, Options) ->
-    and_1(Validators, Value, Options);
-'and'([], _Value, _Options) ->
-    {error, format_error}.    
+'and'([_Validator|_T] = Validators, Value, MapOptions, Options) ->
+    Options1 = 
+        case maps:is_key(is_key, MapOptions) of
+            true ->
+                Options#{map_options => MapOptions};
+            false ->
+                Options
+        end,
+    and_1(Validators, Value, Options1);
+'and'([], _Value, _MapOptions, _Options) ->
+    {error, format_error}.
 
-validator([Function], Value, _Options) when is_function(Function, 1) ->
+validator(Args, Value, Options) ->
+    validator(Args, Value, #{}, Options).
+
+validator([Function], Value, _MapOptions, _Options) when is_function(Function, 1) ->
     Function(Value);
-validator([Function, Args], Value, _Options) when is_function(Function, 2), is_list(Args) ->
+validator([Function, Args], Value,  _MapOptions, _Options) when is_function(Function, 2), is_list(Args) ->
     Function(Args, Value);
-validator([Function, Args], Value, Options) when is_function(Function, 3), is_list(Args) ->
+validator([Function, Args], Value,  _MapOptions, Options) when is_function(Function, 3), is_list(Args) ->
     Function(Args, Value, Options);
-validator(_Args, _Value, _Options) ->
+validator([Function, Args], Value,  MapOptions, Options) when is_function(Function, 4), is_list(Args) ->
+    Function(Args, Value, MapOptions, Options);
+validator(_Args, _Value, _MapOptions, _Options) ->
     {error, format_error}.
 %%--------------------------------------------------------------------
 %% @doc

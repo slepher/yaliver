@@ -21,7 +21,9 @@ map([Args], Map, Options) when is_map(Map), is_map(Args) ->
         maps:fold(
           fun(Key, Validator, {MapAcc, ErrorAcc}) ->
                   {Value, IsKey} = map_get_value(Key, Map),
-                  Options1 =  Options#{key => Key, parent => Map, is_key => IsKey},
+                  {Value, IsKey} = map_get_value(Key, Map),
+                  MapOptions = #{key => Key, parent => Map, is_key => IsKey},
+                  Options1 = Options#{map_options => MapOptions},
                   case yaliver:validate_1(Validator, Value, Options1) of
                       {ok, undefined} ->
                           {MapAcc, ErrorAcc};

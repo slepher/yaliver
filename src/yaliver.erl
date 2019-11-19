@@ -54,6 +54,7 @@ validate_1(Validator, Object, Options) when is_function(Validator) ->
         {error, Reason} ->
             {error, Reason}
     end;
+
 validate_1(Validator, Object, #{root := true} = Options) when is_map(Object), is_map(Validator) ->
     validate_1({map, [Validator]}, Object, Options).
     
@@ -68,30 +69,38 @@ meta() ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-apply_rule(RuleModule, ValidatorName, Arity, Args, Object, _Options) when is_list(Args) ->
-    apply_rule_1(RuleModule, ValidatorName, Arity, Args, Object, _Options);
-apply_rule(RuleModule, ValidatorName, Arity, Args, Object, _Options) ->
-    apply_rule(RuleModule, ValidatorName, Arity, [Args], Object, _Options).
+apply_rule(RuleModule, ValidatorName, Arity, Args, Object, Options) when is_list(Args) ->
+    MapOptions = maps:get(map_options, Options, #{}),
+    Options1 = maps:without([map_options], Options),
+    apply_rule_1(RuleModule, ValidatorName, Arity, Args, Object, MapOptions, Options1);
+apply_rule(RuleModule, ValidatorName, Arity, Args, Object, Options) ->
+    apply_rule(RuleModule, ValidatorName, Arity, [Args], Object, Options).
 
-apply_validator(_Validator, 1, undefined, _Options) ->
+apply_validator(Validator, Arity, Object, Options) ->
+    MapOptions = maps:get(map_options, Options, #{}),
+    Options1 = maps:without([map_options], Options),
+    apply_validator(Validator, Arity, Object, MapOptions, Options1).
+
+apply_validator(Validator, 3, Object, MapOptions, Options) ->
+    Validator(Object, MapOptions, Options);
+apply_validator(_Validator, _Arity, undefined, _MapOptions, _Options) ->
     {ok, undefined};
-apply_validator(Validator, 1, Object, _Options) ->
-    Validator(Object);
-apply_validator(Validator, 2, Object, Options) ->
+apply_validator(Validator, 2, Object, _MapOptions, Options) ->
     Validator(Object, Options);
-apply_validator(_Validator, _, _Object, _Options) ->
+apply_validator(Validator, 1, Object, _MapOptions, _Options) ->
+    Validator(Object);
+apply_validator(_Validator, _Arity, _Object, _MapOptions, _Options) ->
     {error, invalid_validator}.
 
-apply_rule_1(_RuleModule, _ValidatorName, 1, _Args, undefined, __Options) ->
-    {ok, undefined};
-apply_rule_1(RuleModule, ValidatorName, 1, _Args, Object, _Options) ->
-    RuleModule:ValidatorName(Object);
-apply_rule_1(_RuleModule, _ValidatorName, 2, _Args, undefined, __Options) ->
-    {ok, undefined};
-apply_rule_1(RuleModule, ValidatorName, 2, Args, Object, _Options) ->
+apply_rule_1(RuleModule, ValidatorName, 4, Args, Object, MapOptions, Options) ->
+    RuleModule:ValidatorName(Args, Object, MapOptions, Options);
+apply_rule_1(_RuleModule, _ValidatorName, _Arity, _Args, undefined, _MapOptions, __Options) ->    {ok, undefined};
+apply_rule_1(RuleModule, ValidatorName, 3, Args, Object, _MapOptions, Options) ->
+    RuleModule:ValidatorName(Args, Object, Options);
+apply_rule_1(RuleModule, ValidatorName, 2, Args, Object, _MapOptions,_Options) ->
     RuleModule:ValidatorName(Args, Object);
-apply_rule_1(RuleModule, ValidatorName, 3, Args, Object, Options) ->
-    RuleModule:ValidatorName(Args, Object, Options).
+apply_rule_1(RuleModule, ValidatorName, 1, _Args, Object, _MapOptions, _Options) ->
+    RuleModule:ValidatorName(Object).
 
 proplists_to_map(Proplists) ->
     proplists_to_map(Proplists, #{}).
