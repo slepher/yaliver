@@ -17,46 +17,64 @@
 %%%===================================================================
 map([Args], Map, Options) when is_map(Map), is_map(Args) ->
     %% RestMap = maps:without(maps:keys(Args), Map),
-    {Map1, Errors} = 
+    {Map1, Errors, RestOfMap} = 
         maps:fold(
-          fun(Key, Validator, {MapAcc, ErrorAcc}) ->
-                  {Value, IsKey} = map_get_value(Key, Map),
-                  {Value, IsKey} = map_get_value(Key, Map),
+          fun(Key, Validator, {MapAcc, ErrorAcc, RestAcc}) ->
+                  {Value, IsKey, RestAcc1} = map_get_value(Key, RestAcc),
                   MapOptions = #{key => Key, parent => Map, is_key => IsKey},
                   Options1 = Options#{map_options => MapOptions},
                   case yaliver:validate_1(Validator, Value, Options1) of
                       {ok, undefined} ->
-                          {MapAcc, ErrorAcc};
+                          {MapAcc, ErrorAcc, RestAcc1};
                       {ok, Value1} ->
                           MapAcc1 = maps:put(Key, Value1, MapAcc),
-                          {MapAcc1, ErrorAcc};
+                          {MapAcc1, ErrorAcc, RestAcc1};
                       {error, Reason} ->
-                          {MapAcc, [{Key, Reason}|ErrorAcc]}
+                          {MapAcc, [{Key, Reason}|ErrorAcc], RestAcc1}
                   end
-          end, {#{}, []}, Args),
+          end, {#{}, [], Map}, Args),
     case Errors of
         [] ->
-            {ok, Map1};
+            validate_rest_of_map(Map1, RestOfMap, Options);
         _ ->
             {error, Errors}
     end;
 map(_Args, _Value, _Options) ->
     {error, format_error}.
 
+validate_rest_of_map(Map, RestOfMap, #{strict := true}) ->
+    case maps:keys(RestOfMap) of
+        [] ->
+            {ok, Map};
+        Keys ->
+            {error, {extra_keys, Keys}}
+    end;
+validate_rest_of_map(Map, RestOfMap, #{merge_rest := true}) ->
+    Map1 = maps:merge(RestOfMap, Map),
+    {ok, Map1};
+validate_rest_of_map(Map, _RestOfMap, #{}) ->
+    {ok, Map}.
+
 nested_object(Args, Map, Options) ->
     map(Args, Map, Options).
 
 variable_object([Key, ObjectArgs], Map, Options) ->
-    case maps:find(Key, Map) of
-        {ok, Value} ->
-            case maps:find(Value, ObjectArgs) of
-                {ok, MapArgs} ->
-                    map([MapArgs#{Key => required}], Map, Options);
-                error ->
-                    {error, invalid_format}
+    {Value, IsKey, Rest} = map_get_value(Key, Map),
+    case IsKey of
+        true ->
+            case map_get_value(Value, ObjectArgs) of
+                {MapArgs, true, _} ->
+                    case map([MapArgs], Rest, Options) of
+                        {ok, Validated} ->
+                            {ok, Validated#{Key => Value}};
+                        {error, Reason} ->
+                            {error, Reason}
+                    end;
+                {_, false, _} ->
+                    {error, {unsupported_type, Value}}
             end;
         error ->
-            {error, invalid_format}
+            {error, {no_type, Key}}
     end.
 
 list_of([_Args], [], _Options) ->
@@ -100,9 +118,10 @@ map_get_value(Key, Map) when is_binary(Key) ->
 try_keys([Key|T], Map) ->
     case maps:find(Key, Map) of
         {ok, Value} ->
-            {Value, true};
+            Rest = maps:remove(Key, Map),
+            {Value, true, Rest};
         error ->
             try_keys(T, Map)
     end;
-try_keys([], _Map) ->
-    {undefined, false}.
+try_keys([], Map) ->
+    {undefined, false, Map}.

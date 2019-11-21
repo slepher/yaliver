@@ -123,6 +123,8 @@ or_1([], _Value, _Options, Errors) ->
 
 and_1([Validator|T], Value, Options) ->
     case yaliver:validate_1(Validator, Value, Options) of
+        ok ->
+            and_1(T, Value, Options);
         {ok, Value1} ->
             and_1(T, Value1, Options);
         {error, Reason} ->

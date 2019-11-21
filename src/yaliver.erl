@@ -14,6 +14,7 @@
 -export([validate/2, validate/3]).
 -export([validate_1/3]).
 -export([meta/0]).
+-export([update_record/3]).
 
 -use_macro({yaliver_rules_meta, rules_meta/1, #{}}).
 
@@ -60,6 +61,17 @@ validate_1(Validator, Object, #{root := true} = Options) when is_map(Object), is
     
 meta() ->
     yaliver_rules_meta:rules_meta([yaliver_base_rules, yaliver_string_rules, yaliver_collection_rules, yaliver_number_rules]).
+
+update_record(Record, Props, Format) ->
+    maps:fold(
+      fun(Key, Value, Acc) ->
+              case maps:find(Key, Format) of
+                  {ok, Element} ->
+                      setelement(Element, Acc, Value);
+                  error ->
+                      Record
+              end
+      end, Record, Props).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -107,7 +119,9 @@ proplists_to_map(Proplists) ->
 
 proplists_to_map([{Key, Value}|T], Map) ->
     proplists_to_map(T, maps:put(Key, Value, Map));
-proplists_to_map([Key|T], Map) when is_atom(Map) ->
+proplists_to_map([Key|T], Map) when is_atom(Key) ->
     proplists_to_map(T, maps:put(Key, true, Map));
+proplists_to_map([], Acc) ->
+    Acc;
 proplists_to_map([Other|_T], _Map) ->
     exit({invalid_options_value, Other}).

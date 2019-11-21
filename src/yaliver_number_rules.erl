@@ -11,6 +11,7 @@
 -include_lib("erlando/include/do.hrl").
 
 %% API
+-export([boolean/1]).
 -export([integer/1]).
 -export([positive_integer/1, negative_integer/1]).
 -export([number/1]).
@@ -18,6 +19,13 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+boolean(true) ->
+    ok;
+boolean(false) ->
+    ok;
+boolean(_Other) ->
+    {error, not_number}.
+
 integer(Value) when is_integer(Value) ->
     {ok, Value};
 integer(Value) when is_float(Value) ->
