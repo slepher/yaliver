@@ -20,10 +20,14 @@ map([Args], Map, Options) when is_map(Map), is_map(Args) ->
     {Map1, Errors, RestOfMap} = 
         maps:fold(
           fun(Key, Validator, {MapAcc, ErrorAcc, RestAcc}) ->
-                  {Value, IsKey, RestAcc1} = map_get_value(Key, RestAcc),
+                  {Value, NewKey, RestAcc1} = map_get_value(Key, RestAcc),
+                  IsKey = is_key(NewKey),
                   MapOptions = #{key => Key, parent => Map, is_key => IsKey},
                   Options1 = Options#{map_options => MapOptions},
                   case yaliver:validate_1(Validator, Value, Options1) of
+                      ok ->
+                          MapAcc1 = maps:put(Key, Value, MapAcc),
+                          {MapAcc1, ErrorAcc, RestAcc1};                          
                       {ok, undefined} ->
                           {MapAcc, ErrorAcc, RestAcc1};
                       {ok, Value1} ->
@@ -59,21 +63,22 @@ nested_object(Args, Map, Options) ->
     map(Args, Map, Options).
 
 variable_object([Key, ObjectArgs], Map, Options) ->
-    {Value, IsKey, Rest} = map_get_value(Key, Map),
+    {Value, NewKey, Rest} = map_get_value(Key, Map),
+    IsKey = is_key(NewKey),
     case IsKey of
         true ->
             case map_get_value(Value, ObjectArgs) of
-                {MapArgs, true, _} ->
+                {_, undefined, _} ->
+                    {error, {unsupported_type, Value}};
+                {MapArgs, NewValue, _} ->
                     case map([MapArgs], Rest, Options) of
                         {ok, Validated} ->
-                            {ok, Validated#{Key => Value}};
+                            {ok, Validated#{Key => NewValue}};
                         {error, Reason} ->
                             {error, Reason}
-                    end;
-                {_, false, _} ->
-                    {error, {unsupported_type, Value}}
+                    end
             end;
-        error ->
+        false ->
             {error, {no_type, Key}}
     end.
 
@@ -108,6 +113,11 @@ list_of_different_objects(_Args, _List, _Options) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+is_key(undefined) ->
+    false;
+is_key(_) ->
+    true.
+
 map_get_value(Key, Map) when is_atom(Key) ->
     Keys = [Key, atom_to_binary(Key, utf8)],
     try_keys(Keys, Map);
@@ -119,9 +129,9 @@ try_keys([Key|T], Map) ->
     case maps:find(Key, Map) of
         {ok, Value} ->
             Rest = maps:remove(Key, Map),
-            {Value, true, Rest};
+            {Value, Key, Rest};
         error ->
             try_keys(T, Map)
     end;
 try_keys([], Map) ->
-    {undefined, false, Map}.
+    {undefined, undefined, Map}.
